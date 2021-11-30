@@ -8,8 +8,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
-import logging
-from selenium.webdriver.remote.remote_connection import LOGGER
 import os
 import time
 from datetime import date, datetime
@@ -29,7 +27,6 @@ def start_browser():
     browser_options = Options()
     browser_options.add_experimental_option("detach", True)
     s = Service(ChromeDriverManager().install())
-    LOGGER.setLevel(logging.WARNING)
     driver = webdriver.Chrome(service=s, options=browser_options)
     driver.get('https://www.mwave.me/en/signin?retUrl=https://mama.mwave.me/en/main')
     driver.maximize_window()
@@ -54,10 +51,10 @@ def auth_twitch(account):
     # wait until returned to mama home page
     try:
         print('Wait until returned to mama home page')
-        elem = WebDriverWait(driver, 240).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
+        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
         time.sleep(0.5)
-    except TimeoutException:
-        sg.popup_error('ERROR: Took too long to return to MAMA home page', auto_close_duration=5, keep_on_top=True)
+    except:
+        sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return 
 
     # wait until redirected
@@ -142,7 +139,7 @@ def vote(account):
         print('Take screenshot')
         driver.save_screenshot('screenshots/' +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
         sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
-    except TimeoutException:
+    except:
         sg.popup_error('ERROR: Video too long or User took too long to input captcha.', auto_close_duration=5, keep_on_top=True)
         return
     finally:
@@ -158,7 +155,7 @@ usernames = []
 counter = 0
 with open("credentials.csv") as f:
     for line in f:
-        (username, password, method) = line.split(',')
+        (username, password, method) = line.strip().split(',')
         obj = {}
         obj['username'] = username
         obj['password'] = password
