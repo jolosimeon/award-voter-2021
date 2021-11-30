@@ -53,23 +53,43 @@ def auth_twitch(account):
         print('Wait until returned to mama home page')
         elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
         time.sleep(0.5)
+        return True
     except:
         sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
-        return 
+        return False
 
-    # wait until redirected
-    # layout = [  [sg.Text('Click Continue if logged into the MAMA website. Verify that you have completed any bot challenges.')],
-           # [sg.Button('Continue'), sg.Button('Cancel')] ]
-    # window = sg.Window('Project Scientist', layout)
+def auth_google(account):
+    # click the login using twitch button
+    elem = driver.find_element(By.XPATH, '//span[contains(@class, "google")]')
+    elem.click()
+    
+    # fill in username and password
+    elem = driver.find_element(By.XPATH, '//input[@id="identifierId"]')
+    elem.send_keys(account['username'])
 
-    #while True:             # Event Loop
-    #    event, values = window.Read()
-    #    if event == 'Continue':
-    #        break
-     #   elif event == sg.WIN_CLOSED or event == 'Cancel':
-     #       end_program()
-   # window.Close()
+    print('Click next')
+    elem = driver.find_element(By.XPATH, '//div[@id="identifierNext"]')
+    elem.click()
 
+    print('Password time')
+
+    elem = driver.find_element(By.XPATH, '//*[@id ="password"]/div[1]/div / div[1]/input')
+    elem.send_keys(account['password'])
+
+    elem = driver.find_element(By.XPATH, '//input[@id="passwordNext"]')
+    elem.click()
+
+    sg.popup_timed('Logging into Google for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
+
+    # wait until returned to mama home page
+    try:
+        print('Wait until returned to mama home page')
+        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
+        time.sleep(0.5)
+        return True
+    except:
+        sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        return False
 
 def vote(account):
     actions = ActionChains(driver)
@@ -184,9 +204,15 @@ while continue_program:
     window.Close()
 
     start_browser()
+    auth = None
     if curr['method'] == 'twitch':
-        auth_twitch(curr)
-        vote(curr)
+        auth = auth_twitch(curr)
+    elif curr['method'] == 'gmail':
+        auth = auth_google(curr)
     
+    if (auth):
+            vote(curr)
+        
+    # if done voting
     if (driver is not None):
         driver.quit()
