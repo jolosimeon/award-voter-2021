@@ -28,7 +28,7 @@ def start_browser():
     browser_options.add_experimental_option("detach", True)
     s = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=s, options=browser_options)
-    driver.get('https://www.mwave.me/en/signin?retUrl=https://mama.mwave.me/en/main')
+    driver.get('https://www.mwave.me/en/signin')
     driver.maximize_window()
 
 def auth_twitch(account):
@@ -51,7 +51,7 @@ def auth_twitch(account):
     # wait until returned to mama home page
     try:
         print('Wait until returned to mama home page')
-        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
+        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
@@ -139,8 +139,10 @@ def vote(account):
         elem.click()
 
     # find twice and click
+    time.sleep(0.5)
     elem = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]')
     actions.move_to_element(elem).perform()
+    time.sleep(0.5)
     vote_btn = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]').find_element(By.XPATH, './/button')
     if (not vote_btn.is_displayed() or not vote_btn.is_enabled()):
         sg.popup_error('ERROR: Cant find the vote button. The account may have already voted.', auto_close_duration=5, keep_on_top=True)
@@ -161,7 +163,7 @@ def vote(account):
     try:
         print('Wait until captcha is done')
         elem = WebDriverWait(driver, 240).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnVideoPlay"]')))
-
+        time.sleep(0.5)
         # play the video
         elem = driver.find_element(By.XPATH, '//button[@id="btnVideoPlay"]')
         elem.click()
@@ -174,13 +176,13 @@ def vote(account):
         print('Accept consent')
         elem = driver.find_element(By.XPATH, '//button[@id="btnYes"]')
         elem.click()
-        time.sleep(3)
+        time.sleep(5)
         
         # take a screenshot of the successful vote
         #html = driver.find_element_by_tag_name('html')
         #html.send_keys(Keys.HOME)
         driver.execute_script('scrollBy(0, -1080)')
-        time.sleep(1)
+        time.sleep(0.5)
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
         print('Take screenshot')
