@@ -58,6 +58,33 @@ def auth_twitch(account):
         sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return False
 
+def auth_kakao(account):
+    # click the login using twitch button
+    elem = driver.find_element(By.XPATH, '//span[contains(@class, "kakao")]')
+    elem.click()
+    
+    # fill in username and password
+    elem = driver.find_element(By.XPATH, '//input[@name="email"]')
+    elem.send_keys(account['username'])
+
+    elem = driver.find_element(By.XPATH, '//input[@name="password"]')
+    elem.send_keys(account['password'])
+
+    elem = driver.find_element(By.XPATH, '//button[contains(@class, "btn_confirm")]')
+    elem.click()
+
+    sg.popup_timed('Logging into Kakao for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
+
+    # wait until returned to mama home page
+    try:
+        print('Wait until returned to mama home page')
+        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
+        time.sleep(0.5)
+        return True
+    except:
+        sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        return False
+
 def auth_google(account):
     # click the login using twitch button
     elem = driver.find_element(By.XPATH, '//span[contains(@class, "google")]')
@@ -209,6 +236,8 @@ while continue_program:
         auth = auth_twitch(curr)
     elif curr['method'] == 'gmail':
         auth = auth_google(curr)
+    elif curr['method'] == 'kakao':
+        auth = auth_kakao(curr)
     
     if (auth):
             vote(curr)
