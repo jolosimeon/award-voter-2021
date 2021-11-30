@@ -156,9 +156,9 @@ os.environ['WDM_LOG_LEVEL'] = '0'
 credentials = {}
 usernames = []
 counter = 0
-with open("credentials.txt") as f:
+with open("credentials.csv") as f:
     for line in f:
-        (username, password, method) = line.split()
+        (username, password, method) = line.split(',')
         obj = {}
         obj['username'] = username
         obj['password'] = password
