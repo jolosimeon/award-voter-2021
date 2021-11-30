@@ -1,0 +1,18 @@
+{
+    "linux64_chromedriver_96.0.4664.45_for_": {
+        "timestamp": "29/11/2021",
+        "binary_path": "/mnt/c/Users/User/Projects/mama-autovoter/.wdm/drivers/chromedriver/linux64/96.0.4664.45/chromedriver"
+    },
+    "linux64_geckodriver_v0.30.0_for_": {
+        "timestamp": "29/11/2021",
+        "binary_path": "/mnt/c/Users/User/Projects/mama-autovoter/.wdm/drivers/geckodriver/linux64/v0.30.0/geckodriver"
+    },
+    "win64_edgedriver_96.0.1054.34_for_": {
+        "timestamp": "29/11/2021",
+        "binary_path": "C:\\Users\\User\\Projects\\project-scientist\\.wdm\\drivers\\edgedriver\\win64\\96.0.1054.34\\msedgedriver.exe"
+    },
+    "win32_chromedriver_96.0.4664.45_for_": {
+        "timestamp": "30/11/2021",
+        "binary_path": "C:\\Users\\User\\Projects\\project-scientist\\.wdm\\drivers\\chromedriver\\win32\\96.0.4664.45\\chromedriver.exe"
+    }
+}
