@@ -199,6 +199,9 @@ def vote(account):
         # when done quit the window
         return
 
+
+# main
+
 os.environ['WDM_LOCAL'] = '1'
 os.environ['WDM_LOG_LEVEL'] = '0'
 
@@ -223,14 +226,16 @@ driver = None
 
 while continue_program:
     layout = [  [sg.Text('love aint a science, do it for twice', size=(60, 1), justification='left')],
-                [sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
+                [sg.Listbox(usernames, key='username_select', size=(30,10), default_values=[usernames[0]])],
+                #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
                 [sg.Button('Start'), sg.Button('Exit')] ]
     window = sg.Window('Project Scientist', layout, keep_on_top=True)
 
     while True:             # Event Loop
         event, values = window.Read()
         if event == 'Start':
-            curr = credentials[values['username_select']]
+            curr = credentials[values['username_select'][0]]
+            # curr = credentials[values['username_select']]
             break
         elif event == sg.WIN_CLOSED or event == 'Exit':
             quit()
