@@ -172,17 +172,21 @@ def vote(account):
         elem = WebDriverWait(driver, 240).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnYes"]')))
         print('Video completed')
 
+        time.sleep(0.5)
         # accept consent
         print('Accept consent')
         elem = driver.find_element(By.XPATH, '//button[@id="btnYes"]')
         elem.click()
-        time.sleep(5)
-        
-        # take a screenshot of the successful vote
-        #html = driver.find_element_by_tag_name('html')
-        #html.send_keys(Keys.HOME)
+        time.sleep(1)
+
+        # wait for vote confirmation screen
+        print('Wait for vote confirmation screen')
+        elem = WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.XPATH, '//span[@id="step3Date"]')))
+        print('Scroll up for better view')
         driver.execute_script('scrollBy(0, -1080)')
         time.sleep(0.5)
+        
+        # take a screenshot of the successful vote
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
         print('Take screenshot')
