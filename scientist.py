@@ -15,6 +15,15 @@ import pytz
 import PySimpleGUI as sg
 import random
 from selenium.webdriver.support import expected_conditions as EC
+import threading
+from notifypy import Notify
+
+def notify(type, title, message):
+    notification = Notify()
+    notification.title = title
+    notification.message = message
+    #notification.audio = "assets/audio/comeon.wav"
+    notification.send()
 
 def end_program():
     global continue_program
@@ -22,7 +31,6 @@ def end_program():
     return
 
 def start_browser():
-    global driver
     # open browser
     browser_options = Options()
     browser_options.add_experimental_option("detach", True)
@@ -30,8 +38,9 @@ def start_browser():
     driver = webdriver.Chrome(service=s, options=browser_options)
     driver.get('https://www.mwave.me/en/signin')
     driver.maximize_window()
+    return driver
 
-def auth_twitch(account):
+def auth_twitch(driver, account):
     # click the login using twitch button
     elem = driver.find_element(By.XPATH, '//span[contains(@class, "twitch")]')
     elem.click()
@@ -46,7 +55,9 @@ def auth_twitch(account):
     elem = driver.find_element(By.XPATH, '//button[@data-a-target="passport-login-button"]')
     elem.click()
 
-    sg.popup_timed('Logging into Twitch for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
+    notify('notif', 'Logging In - ' + account['username'], 'Logging into Twitch for ' + account['username'] + ', please finish any bot challenges if any.')
+
+    # sg.popup_timed('Logging into Twitch for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
 
     # wait until returned to mama home page
     try:
@@ -55,10 +66,10 @@ def auth_twitch(account):
         time.sleep(0.5)
         return True
     except:
-        sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        # sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return False
 
-def auth_kakao(account):
+def auth_kakao(driver, account):
     # click the login using twitch button
     elem = driver.find_element(By.XPATH, '//span[contains(@class, "kakao")]')
     elem.click()
@@ -73,19 +84,19 @@ def auth_kakao(account):
     elem = driver.find_element(By.XPATH, '//button[contains(@class, "btn_confirm")]')
     elem.click()
 
-    sg.popup_timed('Logging into Kakao for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
+    #sg.popup_timed('Logging into Kakao for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
 
     # wait until returned to mama home page
     try:
         print('Wait until returned to mama home page')
-        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
+        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
-        sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        #sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return False
 
-def auth_google(account):
+def auth_google(driver, account):
     # click the login using twitch button
     elem = driver.find_element(By.XPATH, '//span[contains(@class, "google")]')
     elem.click()
@@ -106,19 +117,19 @@ def auth_google(account):
     elem = driver.find_element(By.XPATH, '//input[@id="passwordNext"]')
     elem.click()
 
-    sg.popup_timed('Logging into Google for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
+    # sg.popup_timed('Logging into Google for ' + account['username'] + ', please finish any bot challenges if any', auto_close_duration=5, keep_on_top=True)
 
     # wait until returned to mama home page
     try:
         print('Wait until returned to mama home page')
-        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[@class="logo_mwave"]')))
+        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
-        sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        # sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return False
 
-def vote(account):
+def vote(driver, account):
     actions = ActionChains(driver)
     driver.get('https://mama.mwave.me/en/vote')
     time.sleep(1)
@@ -145,19 +156,22 @@ def vote(account):
     time.sleep(0.5)
     vote_btn = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]').find_element(By.XPATH, './/button')
     if (not vote_btn.is_displayed() or not vote_btn.is_enabled()):
-        sg.popup_error('ERROR: Cant find the vote button. The account may have already voted.', auto_close_duration=5, keep_on_top=True)
+        # sg.popup_error('ERROR: Cant find the vote button. The account may have already voted.', auto_close_duration=5, keep_on_top=True)
         return
 
     vote_btn.click()
     try:
         pop_up_error = driver.find_element(By.XPATH, '//div[contains(text(), "You have exceeded the votes allowed on the current IP.")]')
         if (pop_up_error.is_displayed()):
-            sg.popup_error('ERROR: IP limit reached.', auto_close_duration=5, keep_on_top=True)
+            print('Error: IP limit on ' + account['username'])
+            # sg.popup_error('ERROR: IP limit reached.', auto_close_duration=5, keep_on_top=True)
             return
     except:
         print('Still within IP limit')
+    
+    notify('notif', 'Input CAPTCHA - ' + account['username'] , 'Please input CAPTCHA for MAMA vote.')
 
-    sg.popup_timed('Please input captcha for MAMA vote', auto_close_duration=5, keep_on_top=True)
+    # sg.popup_timed('Please input captcha for MAMA vote', auto_close_duration=5, keep_on_top=True)
 
     # wait until video is done
     try:
@@ -168,10 +182,16 @@ def vote(account):
         elem = driver.find_element(By.XPATH, '//button[@id="btnVideoPlay"]')
         elem.click()
 
-        print('Wait until video is finished')
-        elem = WebDriverWait(driver, 240).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnYes"]')))
-        print('Video completed')
+        #print('Wait until video is finished')
 
+        # wait until button submit appears and is clickacble
+        elem = WebDriverWait(driver, 240).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnPlayerSubmit"]')))
+        time.sleep(0.5)
+        elem = driver.find_element(By.XPATH, '//button[@id="btnPlayerSubmit"]')
+        elem.click()
+        print('Submit video, dont watch the rest if can submit already')
+
+        elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnYes"]')))
         time.sleep(0.5)
         # accept consent
         print('Accept consent')
@@ -189,16 +209,33 @@ def vote(account):
         # take a screenshot of the successful vote
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
-        print('Take screenshot')
+        print('Take screenshot for ' + account['username'])
         driver.save_screenshot('screenshots/' +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
-        sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
+        notify('notif', 'Success! - ' + account['username'] , 'Successfully voted for ' + account['username'] + '!')
+        # sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
     except:
-        sg.popup_error('ERROR: Video too long or User took too long to input captcha.', auto_close_duration=5, keep_on_top=True)
+        # sg.popup_error('ERROR: Video too long or User took too long to input captcha.', auto_close_duration=5, keep_on_top=True)
         return
     finally:
         # when done quit the window
         return
 
+def autoVote(account):
+    driver = start_browser()
+    auth = None
+    if account['method'] == 'twitch':
+        auth = auth_twitch(driver, account)
+    elif account['method'] == 'gmail':
+        auth = auth_google(driver, account)
+    elif curr['method'] == 'kakao':
+        auth = auth_kakao(driver, account)
+    
+    if (auth):
+            vote(driver, account)
+        
+    # if done voting
+    if (driver is not None):
+        driver.quit()
 
 # main
 
@@ -223,36 +260,23 @@ with open("credentials.csv") as f:
 
 continue_program = True
 driver = None
+layout = [  [sg.Text('love aint a science, do it for twice', size=(60, 1), justification='left')],
+            [sg.Listbox(usernames, key='username_select', size=(30,10), default_values=[usernames[0]])],
+            #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
+            [sg.Button('Start'), sg.Button('Exit')] ]
+window = sg.Window('Project Scientist', layout, keep_on_top=True)
 
 while continue_program:
-    layout = [  [sg.Text('love aint a science, do it for twice', size=(60, 1), justification='left')],
-                [sg.Listbox(usernames, key='username_select', size=(30,10), default_values=[usernames[0]])],
-                #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
-                [sg.Button('Start'), sg.Button('Exit')] ]
-    window = sg.Window('Project Scientist', layout, keep_on_top=True)
-
     while True:             # Event Loop
         event, values = window.Read()
         if event == 'Start':
             curr = credentials[values['username_select'][0]]
+            voter = threading.Thread(target=autoVote, args=(curr,))
+            voter.start()
             # curr = credentials[values['username_select']]
             break
         elif event == sg.WIN_CLOSED or event == 'Exit':
             quit()
-    window.Close()
+    #window.Close()
 
-    start_browser()
-    auth = None
-    if curr['method'] == 'twitch':
-        auth = auth_twitch(curr)
-    elif curr['method'] == 'gmail':
-        auth = auth_google(curr)
-    elif curr['method'] == 'kakao':
-        auth = auth_kakao(curr)
     
-    if (auth):
-            vote(curr)
-        
-    # if done voting
-    if (driver is not None):
-        driver.quit()
