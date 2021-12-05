@@ -17,6 +17,8 @@ import random
 from selenium.webdriver.support import expected_conditions as EC
 import threading
 from notifypy import Notify
+import sys
+from collections import OrderedDict
 
 def notify(type, title, message):
     notification = Notify()
@@ -130,6 +132,7 @@ def auth_google(driver, account):
         return False
 
 def vote(driver, account):
+    write_event_update(account['username'], 'Start Voting')
     actions = ActionChains(driver)
     driver.get('https://mama.mwave.me/en/vote')
     time.sleep(1)
@@ -170,7 +173,7 @@ def vote(driver, account):
         print('Still within IP limit')
     
     notify('notif', 'Input CAPTCHA - ' + account['username'] , 'Please input CAPTCHA for MAMA vote.')
-
+    write_event_update(account['username'], 'Input CAPTCHA')
     # sg.popup_timed('Please input captcha for MAMA vote', auto_close_duration=5, keep_on_top=True)
 
     # wait until video is done
@@ -178,6 +181,7 @@ def vote(driver, account):
         print('Wait until captcha is done')
         elem = WebDriverWait(driver, 240).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnVideoPlay"]')))
         time.sleep(0.5)
+        write_event_update(account['username'], 'Watching Video')
         # play the video
         elem = driver.find_element(By.XPATH, '//button[@id="btnVideoPlay"]')
         elem.click()
@@ -190,6 +194,7 @@ def vote(driver, account):
         elem = driver.find_element(By.XPATH, '//button[@id="btnPlayerSubmit"]')
         elem.click()
         print('Submit video, dont watch the rest if can submit already')
+        write_event_update(account['username'], 'Video Finished')
 
         elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnYes"]')))
         time.sleep(0.5)
@@ -211,6 +216,7 @@ def vote(driver, account):
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
         print('Take screenshot for ' + account['username'])
         driver.save_screenshot('screenshots/' +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
+        write_event_update(account['username'], 'Quit')
         notify('notif', 'Success! - ' + account['username'] , 'Successfully voted for ' + account['username'] + '!')
         # sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
     except:
@@ -220,9 +226,17 @@ def vote(driver, account):
         # when done quit the window
         return
 
+def write_event_update(username, status):
+    update = {}
+    update['username'] = username
+    update['status'] = status
+    window.write_event_value('Update Running List', update)
+
 def autoVote(account):
+    write_event_update(account['username'], 'Logging In')
     driver = start_browser()
     auth = None
+    running[account['username']] = 'Logging In'
     if account['method'] == 'twitch':
         auth = auth_twitch(driver, account)
     elif account['method'] == 'gmail':
@@ -236,6 +250,7 @@ def autoVote(account):
     # if done voting
     if (driver is not None):
         driver.quit()
+        
 
 # main
 
@@ -245,6 +260,10 @@ os.environ['WDM_LOG_LEVEL'] = '0'
 # load credentials from file
 credentials = {}
 usernames = []
+
+running = OrderedDict()
+running_accounts = []
+
 counter = 0
 with open("credentials.csv") as f:
     for line in f:
@@ -260,10 +279,12 @@ with open("credentials.csv") as f:
 
 continue_program = True
 driver = None
-layout = [  [sg.Text('love aint a science, do it for twice', size=(60, 1), justification='left')],
+layout = [  [sg.Text('love aint a science, do it for twice', size=(30, 1), justification='left')],
             [sg.Listbox(usernames, key='username_select', size=(30,10), default_values=[usernames[0]])],
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
-            [sg.Button('Start'), sg.Button('Exit')] ]
+            [sg.Button('Start'), sg.Button('Exit'), sg.Button('Refresh Accounts')],
+            [sg.Text('Currently running:', size=(30, 1), justification='left')],
+            [sg.Listbox(running_accounts, key='running_list', size=(30,10), pad=((0, 0), (0, 10)))] ]
 window = sg.Window('Project Scientist', layout, keep_on_top=True)
 
 while continue_program:
@@ -272,11 +293,45 @@ while continue_program:
         if event == 'Start':
             curr = credentials[values['username_select'][0]]
             voter = threading.Thread(target=autoVote, args=(curr,))
+            voter.daemon = True
             voter.start()
             # curr = credentials[values['username_select']]
             break
+        elif event == 'Refresh Accounts':
+            usernames = []
+            credentials = {}
+            with open("credentials.csv") as f:
+                for line in f:
+                    (username, password, method) = line.strip().split(',')
+                    obj = {}
+                    obj['username'] = username
+                    obj['password'] = password
+                    obj['method'] = method
+                    usernameWithMethod = username + '-' + method 
+                    credentials[usernameWithMethod] = obj
+                    usernames.append(usernameWithMethod)
+                    counter += 1
+            window['username_select'].Update(values=usernames)
+        elif event == 'Update Running List':
+            update = values[event]
+            if update['status'] == 'Quit':
+                del running[update['username']]
+            else:
+                running[update['username']] = update['status']
+            running_list = []
+            ctr = 0
+            for key, value in running.items():
+                running_list.append(str(key) + ' - ' + value)
+            
+            #print(running_list.count)
+            window['running_list'].Update(values=running_list)
         elif event == sg.WIN_CLOSED or event == 'Exit':
-            quit()
+            #for thread in threading.enumerate():
+                #thread.join() 
+                # print(thread.name)
+            sys.exit()
+            # for thread in threading.enumerate(): 
+                # print(thread.name)
     #window.Close()
 
     
