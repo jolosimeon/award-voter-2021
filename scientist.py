@@ -64,7 +64,8 @@ def auth_twitch(driver, account):
     # wait until returned to mama home page
     try:
         print('Wait until returned to mama home page')
-        elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
+        elem = WebDriverWait(driver, 60).until(EC.title_contains('Mwave'))
+        #elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
@@ -145,7 +146,6 @@ def vote(driver, account):
         tutorial_arrow.click()
 
         time.sleep(0.5)
-        #elem = driver.find_element(By.XPATH, '//div[contains(@class, "swiper-button-next")]')
         tutorial_arrow.click()
 
         time.sleep(0.5)
@@ -160,14 +160,12 @@ def vote(driver, account):
     vote_btn = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]').find_element(By.XPATH, './/button')
     if (not vote_btn.is_displayed() or not vote_btn.is_enabled()):
         # sg.popup_error('ERROR: Cant find the vote button. The account may have already voted.', auto_close_duration=5, keep_on_top=True)
-        write_event_update(account['username'], 'Quit')
         return
 
     vote_btn.click()
     try:
         pop_up_error = driver.find_element(By.XPATH, '//div[contains(text(), "You have exceeded the votes allowed on the current IP.")]')
         if (pop_up_error.is_displayed()):
-            write_event_update(account['username'], 'Quit')
             print('Error: IP limit on ' + account['username'])
             # sg.popup_error('ERROR: IP limit reached.', auto_close_duration=5, keep_on_top=True)
             return
@@ -181,7 +179,7 @@ def vote(driver, account):
     # wait until video is done
     try:
         print('Wait until captcha is done')
-        elem = WebDriverWait(driver, 240).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnVideoPlay"]')))
+        elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnVideoPlay"]')))
         time.sleep(0.5)
         write_event_update(account['username'], 'Watching Video')
         # play the video
@@ -245,7 +243,7 @@ def autoVote(account):
     elif curr['method'] == 'kakao':
         auth = auth_kakao(driver, account)
     
-    if (auth):
+    if (auth is not None):
         vote(driver, account)
     else:
         write_event_update(account['username'], 'Quit')
