@@ -160,12 +160,14 @@ def vote(driver, account):
     vote_btn = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]').find_element(By.XPATH, './/button')
     if (not vote_btn.is_displayed() or not vote_btn.is_enabled()):
         # sg.popup_error('ERROR: Cant find the vote button. The account may have already voted.', auto_close_duration=5, keep_on_top=True)
+        write_event_update(account['username'], 'Quit')
         return
 
     vote_btn.click()
     try:
         pop_up_error = driver.find_element(By.XPATH, '//div[contains(text(), "You have exceeded the votes allowed on the current IP.")]')
         if (pop_up_error.is_displayed()):
+            write_event_update(account['username'], 'Quit')
             print('Error: IP limit on ' + account['username'])
             # sg.popup_error('ERROR: IP limit reached.', auto_close_duration=5, keep_on_top=True)
             return
@@ -215,8 +217,7 @@ def vote(driver, account):
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
         print('Take screenshot for ' + account['username'])
-        driver.save_screenshot('screenshots/' +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
-        write_event_update(account['username'], 'Quit')
+        driver.save_screenshot('screenshots/' +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')       
         notify('notif', 'Success! - ' + account['username'] , 'Successfully voted for ' + account['username'] + '!')
         # sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
     except:
@@ -245,10 +246,13 @@ def autoVote(account):
         auth = auth_kakao(driver, account)
     
     if (auth):
-            vote(driver, account)
+        vote(driver, account)
+    else:
+        write_event_update(account['username'], 'Quit')
         
     # if done voting
     if (driver is not None):
+        write_event_update(account['username'], 'Quit')
         driver.quit()
         
 
@@ -287,8 +291,8 @@ layout = [  [sg.Text('love aint a science, do it for twice', size=(30, 1), justi
             [sg.Listbox(running_accounts, key='running_list', size=(30,10), pad=((0, 0), (0, 10)))] ]
 window = sg.Window('Project Scientist', layout, keep_on_top=True)
 
-while continue_program:
-    while True:             # Event Loop
+while continue_program:      # Event Loop
+    while True:
         event, values = window.Read()
         if event == 'Start':
             curr = credentials[values['username_select'][0]]
@@ -296,7 +300,6 @@ while continue_program:
             voter.daemon = True
             voter.start()
             # curr = credentials[values['username_select']]
-            break
         elif event == 'Refresh Accounts':
             usernames = []
             credentials = {}
@@ -311,27 +314,21 @@ while continue_program:
                     credentials[usernameWithMethod] = obj
                     usernames.append(usernameWithMethod)
                     counter += 1
-            window['username_select'].Update(values=usernames)
+            window['username_select'].Update(values=usernames, set_to_index=0)
         elif event == 'Update Running List':
             update = values[event]
             if update['status'] == 'Quit':
-                del running[update['username']]
+                if update['username'] in running:
+                    del running[update['username']]
             else:
                 running[update['username']] = update['status']
             running_list = []
             ctr = 0
             for key, value in running.items():
                 running_list.append(str(key) + ' - ' + value)
-            
-            #print(running_list.count)
+
             window['running_list'].Update(values=running_list)
         elif event == sg.WIN_CLOSED or event == 'Exit':
-            #for thread in threading.enumerate():
-                #thread.join() 
-                # print(thread.name)
             sys.exit()
-            # for thread in threading.enumerate(): 
-                # print(thread.name)
-    #window.Close()
 
     
