@@ -37,7 +37,8 @@ def start_browser():
     # open browser
     browser_options = Options()
     browser_options.add_experimental_option("detach", True)
-    s = Service(ChromeDriverManager().install())
+    # s = Service(ChromeDriverManager().install())
+    s = Service('./webdriver/chromedriver.exe')
     driver = webdriver.Chrome(service=s, options=browser_options)
     driver.get('https://www.mwave.me/en/signin')
     driver.maximize_window()
