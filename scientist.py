@@ -296,17 +296,18 @@ running_accounts = []
 continue_program = True
 driver = None
 layout = [  
-            [sg.Text('love aint a science, do it for twice', size=(30, 1), justification='left')],
+            [sg.Text('love aint a science, do it for twice', size=(30, 1), font=('Any', 15, 'bold'), justification='left')],
+            [sg.Text('Select accounts file (.csv) to load and folder for screenshots output:', size=(50, 1), justification='left')],
+            [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
+            [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
             [sg.Text('Select account:', size=(30, 1), justification='left'), sg.Text('Currently running:', size=(30, 1), justification='left'),],
             [sg.Listbox(usernames, key='username_select', size=(30,10)), sg.Listbox(running_accounts, key='running_list', size=(30,10), pad=((20, 0), (10, 10)))],
             [sg.Button('Start'), sg.Button('Exit')],
-            [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
-            [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
-            [sg.Text('Log', size=(10, 1), justification='left')],
+            [sg.Text('Log:', size=(10, 1), justification='left')],
             [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True)]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
         ]
-window = sg.Window('Project Scientist', layout, keep_on_top=True).finalize()
+window = sg.Window('Project Scientist', layout, no_titlebar=True, keep_on_top=True).finalize()
 
 if (settings['Settings']['prev_accounts_file']):
     try:
