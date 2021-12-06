@@ -37,8 +37,8 @@ def start_browser():
     # open browser
     browser_options = Options()
     browser_options.add_experimental_option("detach", True)
-    # s = Service(ChromeDriverManager().install())
-    s = Service('./webdriver/chromedriver.exe')
+    s = Service(ChromeDriverManager().install())
+    # s = Service('./webdriver/chromedriver.exe')
     driver = webdriver.Chrome(service=s, options=browser_options)
     driver.get('https://www.mwave.me/en/signin')
     driver.maximize_window()
@@ -280,8 +280,8 @@ print = mprint
 
 # main
 
-os.environ['WDM_LOCAL'] = '1'
-os.environ['WDM_LOG_LEVEL'] = '0'
+# os.environ['WDM_LOCAL'] = '1'
+# os.environ['WDM_LOG_LEVEL'] = '0'
 
 #load user settings
 #sg.user_settings_filename(path='.')
@@ -307,7 +307,7 @@ layout = [
             [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True)]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
         ]
-window = sg.Window('Project Scientist', layout, no_titlebar=True, keep_on_top=True).finalize()
+window = sg.Window('Project Scientist', layout, icon=True, keep_on_top=True).finalize()
 
 if (settings['Settings']['prev_accounts_file']):
     try:
