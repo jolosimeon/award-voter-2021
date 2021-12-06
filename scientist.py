@@ -23,11 +23,12 @@ from pathlib import Path
 import platform
 
 def notify(type, title, message):
-    notification = Notify()
-    notification.title = title
-    notification.message = message
-    #notification.audio = "assets/audio/comeon.wav"
-    notification.send()
+    if platform.system() == 'Windows':
+        notification = Notify()
+        notification.title = title
+        notification.message = message
+        #notification.audio = "assets/audio/comeon.wav"
+        notification.send()
 
 def end_program():
     global continue_program
@@ -286,7 +287,7 @@ print = mprint
 
 #load user settings
 #sg.user_settings_filename(path='.')
-settings = sg.UserSettings('scientist_config.ini', path='.', use_config_file=True, convert_bools_and_none=True)
+settings = sg.UserSettings('scientist_config.ini', use_config_file=True, convert_bools_and_none=True)
 
 credentials = {}
 usernames = []
@@ -298,7 +299,7 @@ continue_program = True
 driver = None
 layout = [  
             [sg.Text('love aint a science, do it for twice', size=(30, 1), font=('Any', 15, 'bold'), justification='left')],
-            [sg.Text('Select accounts file (.csv) to load and folder for screenshots output:', size=(50, 1), justification='left')],
+            [sg.Text('Select accounts file (.csv) to load and folder for screenshots output:', size=(60, 1), justification='left')],
             [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
             [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
             [sg.Text('Select account:', size=(30, 1), justification='left'), sg.Text('Currently running:', size=(30, 1), justification='left'),],
