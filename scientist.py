@@ -20,6 +20,7 @@ from notifypy import Notify
 import sys
 from collections import OrderedDict
 from pathlib import Path
+import platform
 
 def notify(type, title, message):
     notification = Notify()
@@ -307,7 +308,11 @@ layout = [
             [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True)]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
         ]
-window = sg.Window('Project Scientist', layout, icon='assets/potion.ico', keep_on_top=True).finalize()
+if platform.system() == 'Windows':
+    icon = 'assets/icons/potion.ico'  
+else:
+    icon = 'assets/icons/potion.icns'  
+window = sg.Window('Project Scientist', layout, icon=icon, keep_on_top=True).finalize()
 
 if (settings['Settings']['prev_accounts_file']):
     try:
