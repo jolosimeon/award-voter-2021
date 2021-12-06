@@ -132,7 +132,7 @@ def auth_google(driver, account):
         # sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return False
 
-def vote(driver, account):
+def vote(driver, account, screenshots_folder):
     write_event_update(account['username'], 'Start Voting')
     actions = ActionChains(driver)
     driver.get('https://mama.mwave.me/en/vote')
@@ -215,7 +215,7 @@ def vote(driver, account):
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
         print('Take screenshot for ' + account['username'])
-        driver.save_screenshot('screenshots/' +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')       
+        driver.save_screenshot(screenshots_folder +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')       
         notify('notif', 'Success! - ' + account['username'] , 'Successfully voted for ' + account['username'] + '!')
         # sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
     except:
@@ -225,13 +225,30 @@ def vote(driver, account):
         # when done quit the window
         return
 
+def load_accounts_file(filename):
+    usernames = []
+    credentials = {}
+    counter = 0
+    with open(filename) as f:
+        for line in f:
+            (username, password, method) = line.strip().split(',')
+            obj = {}
+            obj['username'] = username
+            obj['password'] = password
+            obj['method'] = method
+            usernameWithMethod = username + '-' + method 
+            credentials[usernameWithMethod] = obj
+            usernames.append(usernameWithMethod)
+            counter += 1
+    return { 'usernames': usernames, 'credentials': credentials }
+
 def write_event_update(username, status):
     update = {}
     update['username'] = username
     update['status'] = status
     window.write_event_value('Update Running List', update)
 
-def autoVote(account):
+def autoVote(account, screenshots_folder):
     write_event_update(account['username'], 'Logging In')
     driver = start_browser()
     auth = None
@@ -244,7 +261,7 @@ def autoVote(account):
         auth = auth_kakao(driver, account)
     
     if (auth is not None):
-        vote(driver, account)
+        vote(driver, account, screenshots_folder)
     else:
         write_event_update(account['username'], 'Quit')
         
@@ -259,60 +276,82 @@ def autoVote(account):
 os.environ['WDM_LOCAL'] = '1'
 os.environ['WDM_LOG_LEVEL'] = '0'
 
-# load credentials from file
+#load user settings
+#sg.user_settings_filename(path='.')
+settings = sg.UserSettings('scienstist_config.ini', path='.', use_config_file=True, convert_bools_and_none=True)
+
 credentials = {}
 usernames = []
+
+if (settings['Settings']['prev_accounts_file']):
+    try:
+        accounts = load_accounts_file(settings['Settings']['prev_accounts_file'])
+        usernames = accounts['usernames']
+        credentials = accounts['credentials']
+    except:
+        sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)
 
 running = OrderedDict()
 running_accounts = []
 
 counter = 0
-with open("credentials.csv") as f:
-    for line in f:
-        (username, password, method) = line.strip().split(',')
-        obj = {}
-        obj['username'] = username
-        obj['password'] = password
-        obj['method'] = method
-        usernameWithMethod = username + '-' + method 
-        credentials[usernameWithMethod] = obj
-        usernames.append(usernameWithMethod)
-        counter += 1
+# with open("credentials.csv") as f:
+#     for line in f:
+#         (username, password, method) = line.strip().split(',')
+#         obj = {}
+#         obj['username'] = username
+#         obj['password'] = password
+#         obj['method'] = method
+#         usernameWithMethod = username + '-' + method 
+#         credentials[usernameWithMethod] = obj
+#         usernames.append(usernameWithMethod)
+#         counter += 1
 
 continue_program = True
 driver = None
-layout = [  [sg.Text('love aint a science, do it for twice', size=(30, 1), justification='left')],
-            [sg.Listbox(usernames, key='username_select', size=(30,10), default_values=[usernames[0]])],
+layout = [  
+            [sg.Text('love aint a science, do it for twice', size=(30, 1), justification='left')],
+            [sg.Text('Select account:', size=(30, 1), justification='left'), sg.Text('Currently running:', size=(30, 1), justification='left'),],
+            [sg.Listbox(usernames, key='username_select', size=(30,10)), sg.Listbox(running_accounts, key='running_list', size=(30,10), pad=((20, 0), (10, 10)))],
+            [sg.Button('Start'), sg.Button('Exit')],
+            [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
+            [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
-            [sg.Button('Start'), sg.Button('Exit'), sg.Button('Refresh Accounts')],
-            [sg.Text('Currently running:', size=(30, 1), justification='left')],
-            [sg.Listbox(running_accounts, key='running_list', size=(30,10), pad=((0, 0), (0, 10)))] ]
+        ]
 window = sg.Window('Project Scientist', layout, keep_on_top=True)
 
 while continue_program:      # Event Loop
     while True:
         event, values = window.Read()
         if event == 'Start':
-            curr = credentials[values['username_select'][0]]
-            voter = threading.Thread(target=autoVote, args=(curr,))
-            voter.daemon = True
-            voter.start()
+            if len(values['username_select']) > 0:
+                curr = credentials[values['username_select'][0]]
+                screenshots_folder = values['screenshots_folder_browse']
+                if not screenshots_folder:
+                    screenshots_folder = ''
+                else:
+                    screenshots_folder += '/'
+                voter = threading.Thread(target=autoVote, args=(curr, screenshots_folder))
+                voter.daemon = True
+                voter.start()
             # curr = credentials[values['username_select']]
-        elif event == 'Refresh Accounts':
+        elif event == 'accounts_file_browse':
             usernames = []
             credentials = {}
-            with open("credentials.csv") as f:
-                for line in f:
-                    (username, password, method) = line.strip().split(',')
-                    obj = {}
-                    obj['username'] = username
-                    obj['password'] = password
-                    obj['method'] = method
-                    usernameWithMethod = username + '-' + method 
-                    credentials[usernameWithMethod] = obj
-                    usernames.append(usernameWithMethod)
-                    counter += 1
-            window['username_select'].Update(values=usernames, set_to_index=0)
+            try:
+                accounts = load_accounts_file(values['accounts_file_browse'])
+                usernames = accounts['usernames']
+                credentials = accounts['credentials']
+                settings['Settings']['prev_accounts_file'] = values['accounts_file_browse']
+            except Exception as e:
+                window['accounts_file_browse'].Update(value='')
+                sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)   
+            window['username_select'].Update(values=usernames)
+        elif event == 'screenshots_folder_browse':
+            settings['Settings']['prev_screenshots_folder'] = values['screenshots_folder_browse']
+        # elif event == 'Save Settings':
+        #     settings['prev_accounts_file'] = values['accounts_file_browse']
+        #     settings['prev_screenshots_folder'] = values['screenshots_folder_browse']
         elif event == 'Update Running List':
             update = values[event]
             if update['status'] == 'Quit':
