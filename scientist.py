@@ -302,7 +302,7 @@ layout = [
             [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
             [sg.Text('Select account:', size=(30, 1), justification='left'), sg.Text('Currently running:', size=(30, 1), justification='left'),],
             [sg.Listbox(usernames, key='username_select', size=(30,10)), sg.Listbox(running_accounts, key='running_list', highlight_text_color=sg.theme_input_text_color(), highlight_background_color=sg.theme_input_background_color(), size=(30,10), pad=((20, 0), (10, 10)))],
-            [sg.Column([ [sg.Button('Vote'), sg.Button('Exit')] ], vertical_alignment='center', justification='center')],
+            [sg.Column([ [sg.Button('Vote'), sg.Button('Refresh Accounts'), sg.Button('Exit')] ], vertical_alignment='center', justification='left')],
             [sg.Text('Log:', size=(10, 1), justification='left')],
             [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True, pad=((5, 0), (0, 20)))]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
@@ -336,7 +336,7 @@ while True:
             else:
                 sg.popup_error('Error reading screenshots folder.', keep_on_top=True)  
         # curr = credentials[values['username_select']]
-    elif event == 'accounts_file_browse':
+    elif event == 'accounts_file_browse' or event == 'Refresh Accounts':
         usernames = []
         credentials = {}
         try:
