@@ -307,7 +307,7 @@ layout = [
             [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True)]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
         ]
-window = sg.Window('Project Scientist', layout, icon=True, keep_on_top=True).finalize()
+window = sg.Window('Project Scientist', layout, icon='assets/potion.ico', keep_on_top=True).finalize()
 
 if (settings['Settings']['prev_accounts_file']):
     try:
