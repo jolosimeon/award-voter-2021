@@ -344,11 +344,7 @@ while continue_program:      # Event Loop
                 sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)   
             window['username_select'].Update(values=usernames)
         elif event == 'screenshots_folder_browse':
-            print('test', text_color = 'red')
             settings['Settings']['prev_screenshots_folder'] = values['screenshots_folder_browse']
-        # elif event == 'Save Settings':
-        #     settings['prev_accounts_file'] = values['accounts_file_browse']
-        #     settings['prev_screenshots_folder'] = values['screenshots_folder_browse']
         elif event == 'Update Running List':
             update = values[event]
             if update['status'] == 'Quit':
