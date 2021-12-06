@@ -19,6 +19,7 @@ import threading
 from notifypy import Notify
 import sys
 from collections import OrderedDict
+from pathlib import Path
 
 def notify(type, title, message):
     notification = Notify()
@@ -63,13 +64,13 @@ def auth_twitch(driver, account):
 
     # wait until returned to mama home page
     try:
-        print('Wait until returned to mama home page')
+        #print('Wait until returned to mama home page')
         elem = WebDriverWait(driver, 60).until(EC.title_contains('Mwave'))
         #elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
-        # sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        print('[' + account['username'] + '] ' + 'ERROR:Login error.', text_color='red')
         return False
 
 def auth_kakao(driver, account):
@@ -91,11 +92,11 @@ def auth_kakao(driver, account):
 
     # wait until returned to mama home page
     try:
-        print('Wait until returned to mama home page')
         elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
+        print('[' + account['username'] + '] ' + 'ERROR:Login error.', text_color='red')
         #sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
         return False
 
@@ -124,12 +125,11 @@ def auth_google(driver, account):
 
     # wait until returned to mama home page
     try:
-        print('Wait until returned to mama home page')
         elem = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, '//i[contains(@class, "logo_mwave")]')))
         time.sleep(0.5)
         return True
     except:
-        # sg.popup_error('ERROR: Took too long to return to MAMA home page. User may have been unable to login.', auto_close_duration=5, keep_on_top=True)
+        print('[' + account['username'] + '] ' + 'ERROR:Login error.', text_color='red')
         return False
 
 def vote(driver, account, screenshots_folder):
@@ -159,18 +159,17 @@ def vote(driver, account, screenshots_folder):
     time.sleep(0.5)
     vote_btn = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]').find_element(By.XPATH, './/button')
     if (not vote_btn.is_displayed() or not vote_btn.is_enabled()):
-        # sg.popup_error('ERROR: Cant find the vote button. The account may have already voted.', auto_close_duration=5, keep_on_top=True)
+        print('[' + account['username'] + '] ' + 'ERROR: Cant find the vote button. The account may have already voted.', text_color='red')
         return
 
     vote_btn.click()
     try:
         pop_up_error = driver.find_element(By.XPATH, '//div[contains(text(), "You have exceeded the votes allowed on the current IP.")]')
         if (pop_up_error.is_displayed()):
-            print('Error: IP limit on ' + account['username'])
-            # sg.popup_error('ERROR: IP limit reached.', auto_close_duration=5, keep_on_top=True)
+            print('[' + account['username'] + '] ' + 'ERROR: IP Limit reached.', text_color='red')
             return
     except:
-        print('Still within IP limit')
+        pass
     
     notify('notif', 'Input CAPTCHA - ' + account['username'] , 'Please input CAPTCHA for MAMA vote.')
     write_event_update(account['username'], 'Input CAPTCHA')
@@ -178,7 +177,7 @@ def vote(driver, account, screenshots_folder):
 
     # wait until video is done
     try:
-        print('Wait until captcha is done')
+        # print('Wait until captcha is done')
         elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnVideoPlay"]')))
         time.sleep(0.5)
         write_event_update(account['username'], 'Watching Video')
@@ -193,39 +192,40 @@ def vote(driver, account, screenshots_folder):
         time.sleep(0.5)
         elem = driver.find_element(By.XPATH, '//button[@id="btnPlayerSubmit"]')
         elem.click()
-        print('Submit video, dont watch the rest if can submit already')
+        # print('Submit video, dont watch the rest if can submit already')
         write_event_update(account['username'], 'Video Finished')
 
         elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//button[@id="btnYes"]')))
         time.sleep(0.5)
         # accept consent
-        print('Accept consent')
+        # print('Accept consent')
         elem = driver.find_element(By.XPATH, '//button[@id="btnYes"]')
         elem.click()
         time.sleep(1)
 
         # wait for vote confirmation screen
-        print('Wait for vote confirmation screen')
         elem = WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.XPATH, '//span[@id="step3Date"]')))
-        print('Scroll up for better view')
+        # print('Scroll up for better view')
         driver.execute_script('scrollBy(0, -1080)')
         time.sleep(0.5)
         
         # take a screenshot of the successful vote
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
-        print('Take screenshot for ' + account['username'])
-        driver.save_screenshot(screenshots_folder +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')       
-        notify('notif', 'Success! - ' + account['username'] , 'Successfully voted for ' + account['username'] + '!')
+        # print('Take screenshot for ' + account['username'])
+        driver.save_screenshot(screenshots_folder +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
+        print('[' + account['username'] + '] ' + 'Successfuly voted for TWICE!.', text_color='green')   
         # sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
     except:
-        # sg.popup_error('ERROR: Video too long or User took too long to input captcha.', auto_close_duration=5, keep_on_top=True)
+        print('[' + account['username'] + '] ' + 'ERROR: Video eror or user took too long to input captcha.', text_color='red')
         return
     finally:
         # when done quit the window
         return
 
 def load_accounts_file(filename):
+    if not Path(filename).is_file() or not Path(filename).suffix == '.csv':
+        raise Exception('File input error')
     usernames = []
     credentials = {}
     counter = 0
@@ -240,6 +240,7 @@ def load_accounts_file(filename):
             credentials[usernameWithMethod] = obj
             usernames.append(usernameWithMethod)
             counter += 1
+    print('[Scientist] Loaded accounts file.')
     return { 'usernames': usernames, 'credentials': credentials }
 
 def write_event_update(username, status):
@@ -269,6 +270,11 @@ def autoVote(account, screenshots_folder):
     if (driver is not None):
         write_event_update(account['username'], 'Quit')
         driver.quit()
+
+def mprint(*args, **kwargs):
+    window['log'].print(*args, **kwargs)
+
+print = mprint
         
 
 # main
@@ -278,34 +284,13 @@ os.environ['WDM_LOG_LEVEL'] = '0'
 
 #load user settings
 #sg.user_settings_filename(path='.')
-settings = sg.UserSettings('scienstist_config.ini', path='.', use_config_file=True, convert_bools_and_none=True)
+settings = sg.UserSettings('scientist_config.ini', path='.', use_config_file=True, convert_bools_and_none=True)
 
 credentials = {}
 usernames = []
 
-if (settings['Settings']['prev_accounts_file']):
-    try:
-        accounts = load_accounts_file(settings['Settings']['prev_accounts_file'])
-        usernames = accounts['usernames']
-        credentials = accounts['credentials']
-    except:
-        sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)
-
 running = OrderedDict()
 running_accounts = []
-
-counter = 0
-# with open("credentials.csv") as f:
-#     for line in f:
-#         (username, password, method) = line.strip().split(',')
-#         obj = {}
-#         obj['username'] = username
-#         obj['password'] = password
-#         obj['method'] = method
-#         usernameWithMethod = username + '-' + method 
-#         credentials[usernameWithMethod] = obj
-#         usernames.append(usernameWithMethod)
-#         counter += 1
 
 continue_program = True
 driver = None
@@ -316,9 +301,20 @@ layout = [
             [sg.Button('Start'), sg.Button('Exit')],
             [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
             [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
+            [sg.Text('Log', size=(10, 1), justification='left')],
+            [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True)]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
         ]
-window = sg.Window('Project Scientist', layout, keep_on_top=True)
+window = sg.Window('Project Scientist', layout, keep_on_top=True).finalize()
+
+if (settings['Settings']['prev_accounts_file']):
+    try:
+        accounts = load_accounts_file(settings['Settings']['prev_accounts_file'])
+        usernames = accounts['usernames']
+        credentials = accounts['credentials']
+        window['username_select'].Update(values=usernames)
+    except:
+        sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)
 
 while continue_program:      # Event Loop
     while True:
@@ -348,6 +344,7 @@ while continue_program:      # Event Loop
                 sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)   
             window['username_select'].Update(values=usernames)
         elif event == 'screenshots_folder_browse':
+            print('test', text_color = 'red')
             settings['Settings']['prev_screenshots_folder'] = values['screenshots_folder_browse']
         # elif event == 'Save Settings':
         #     settings['prev_accounts_file'] = values['accounts_file_browse']

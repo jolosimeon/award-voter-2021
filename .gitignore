@@ -259,3 +259,5 @@ dist
 screenshots/*
 .wdm
 credentials.csv
+accounts.csv
+*.ini
