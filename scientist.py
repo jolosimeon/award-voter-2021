@@ -30,10 +30,10 @@ def notify(type, title, message):
         #notification.audio = "assets/audio/comeon.wav"
         notification.send()
 
-def end_program():
-    global continue_program
-    continue_program = False
-    return
+# def end_program():
+#     global continue_program
+#     continue_program = False
+#     return
 
 def start_browser():
     # open browser
@@ -215,10 +215,8 @@ def vote(driver, account, screenshots_folder):
         # take a screenshot of the successful vote
         datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
         now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
-        # print('Take screenshot for ' + account['username'])
         driver.save_screenshot(screenshots_folder +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
-        print('[' + account['username'] + '] ' + 'Successfuly voted for TWICE!.', text_color='green')   
-        # sg.popup_timed('Successfully voted for ' + account['username'] + '!', auto_close_duration=5, keep_on_top=True)
+        print('[' + account['username'] + '] ' + 'Successfuly voted for TWICE! Screenshot saved.', text_color='green')   
     except:
         print('[' + account['username'] + '] ' + 'ERROR: Video eror or user took too long to input captcha.', text_color='red')
         return
@@ -303,10 +301,10 @@ layout = [
             [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
             [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
             [sg.Text('Select account:', size=(30, 1), justification='left'), sg.Text('Currently running:', size=(30, 1), justification='left'),],
-            [sg.Listbox(usernames, key='username_select', size=(30,10)), sg.Listbox(running_accounts, key='running_list', size=(30,10), pad=((20, 0), (10, 10)))],
-            [sg.Button('Start'), sg.Button('Exit')],
+            [sg.Listbox(usernames, key='username_select', size=(30,10)), sg.Listbox(running_accounts, key='running_list', highlight_text_color=sg.theme_input_text_color(), highlight_background_color=sg.theme_input_background_color(), size=(30,10), pad=((20, 0), (10, 10)))],
+            [sg.Column([ [sg.Button('Vote'), sg.Button('Exit')] ], vertical_alignment='center', justification='center')],
             [sg.Text('Log:', size=(10, 1), justification='left')],
-            [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True)]
+            [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True, pad=((5, 0), (0, 20)))]
             #[sg.Combo(usernames, key='username_select', default_value=usernames[0], readonly=True)],
         ]
 if platform.system() == 'Windows':
@@ -324,49 +322,48 @@ if (settings['Settings']['prev_accounts_file']):
     except:
         sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)
 
-while continue_program:      # Event Loop
-    while True:
-        event, values = window.Read()
-        if event == 'Start':
-            if len(values['username_select']) > 0:
-                curr = credentials[values['username_select'][0]]
-                screenshots_folder = values['screenshots_folder_browse']
-                if not screenshots_folder:
-                    screenshots_folder = ''
-                else:
-                    screenshots_folder += '/'
+while True:
+    event, values = window.Read()
+    if event == 'Vote':
+        if len(values['username_select']) > 0:
+            curr = credentials[values['username_select'][0]]
+            screenshots_folder = values['screenshots_folder_browse']
+            if screenshots_folder and Path(screenshots_folder).is_dir():
+                screenshots_folder += '/'
                 voter = threading.Thread(target=autoVote, args=(curr, screenshots_folder))
                 voter.daemon = True
                 voter.start()
-            # curr = credentials[values['username_select']]
-        elif event == 'accounts_file_browse':
-            usernames = []
-            credentials = {}
-            try:
-                accounts = load_accounts_file(values['accounts_file_browse'])
-                usernames = accounts['usernames']
-                credentials = accounts['credentials']
-                settings['Settings']['prev_accounts_file'] = values['accounts_file_browse']
-            except Exception as e:
-                window['accounts_file_browse'].Update(value='')
-                sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)   
-            window['username_select'].Update(values=usernames)
-        elif event == 'screenshots_folder_browse':
-            settings['Settings']['prev_screenshots_folder'] = values['screenshots_folder_browse']
-        elif event == 'Update Running List':
-            update = values[event]
-            if update['status'] == 'Quit':
-                if update['username'] in running:
-                    del running[update['username']]
             else:
-                running[update['username']] = update['status']
-            running_list = []
-            ctr = 0
-            for key, value in running.items():
-                running_list.append(str(key) + ' - ' + value)
+                sg.popup_error('Error reading screenshots folder.', keep_on_top=True)  
+        # curr = credentials[values['username_select']]
+    elif event == 'accounts_file_browse':
+        usernames = []
+        credentials = {}
+        try:
+            accounts = load_accounts_file(values['accounts_file_browse'])
+            usernames = accounts['usernames']
+            credentials = accounts['credentials']
+            settings['Settings']['prev_accounts_file'] = values['accounts_file_browse']
+        except Exception as e:
+            window['accounts_file_browse'].Update(value='')
+            sg.popup_error('Error reading file. Please make sure that the file is a .csv and follows the "username,password,method" format.', keep_on_top=True)   
+        window['username_select'].Update(values=usernames)
+    elif event == 'screenshots_folder_browse':
+        settings['Settings']['prev_screenshots_folder'] = values['screenshots_folder_browse']
+    elif event == 'Update Running List':
+        update = values[event]
+        if update['status'] == 'Quit':
+            if update['username'] in running:
+                del running[update['username']]
+        else:
+            running[update['username']] = update['status']
+        running_list = []
+        ctr = 0
+        for key, value in running.items():
+            running_list.append(str(key) + ' - ' + value)
 
-            window['running_list'].Update(values=running_list)
-        elif event == sg.WIN_CLOSED or event == 'Exit':
-            sys.exit()
+        window['running_list'].Update(values=running_list)
+    elif event == sg.WIN_CLOSED or event == 'Exit':
+        sys.exit()
 
     
