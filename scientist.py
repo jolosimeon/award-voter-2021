@@ -139,27 +139,35 @@ def vote(driver, account, screenshots_folder):
     write_event_update(account['username'], 'Start Voting')
     actions = ActionChains(driver)
     driver.get('https://mama.mwave.me/en/vote')
-    time.sleep(1)
+    #time.sleep(1)
 
     # check if there is tutorial
-    tutorial_arrow = driver.find_element(By.XPATH, '//div[contains(@class, "swiper-button-next")]')
+    
 
-    if (tutorial_arrow.is_displayed() and tutorial_arrow.is_enabled()):
-        # click through the tutorial dialog boxes
-        tutorial_arrow.click()
+    # always wait for tutorial
+    try:
+        elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "swiper-button-next")]')))
+        tutorial_arrow = driver.find_element(By.XPATH, '//div[contains(@class, "swiper-button-next")]')
 
-        time.sleep(0.5)
-        tutorial_arrow.click()
+        if (tutorial_arrow.is_displayed() and tutorial_arrow.is_enabled()):
+            # click through the tutorial dialog boxes
+            tutorial_arrow.click()
 
-        time.sleep(0.5)
-        elem = driver.find_element(By.XPATH, '//i[contains(@class, "daysCheck7Btn")]')
-        elem.click()
+            time.sleep(0.5)
+            tutorial_arrow.click()
+
+            time.sleep(0.5)
+            elem = driver.find_element(By.XPATH, '//i[contains(@class, "daysCheck7Btn")]')
+            elem.click()
+    except:
+        print('[' + account['username'] + '] ' + 'ERROR: Could not find tutorial to clickthrough.', text_color='red')
+        return
 
     # find twice and click
     time.sleep(0.5)
     elem = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]')
     actions.move_to_element(elem).perform()
-    time.sleep(0.5)
+    # time.sleep(0.5)
     vote_btn = driver.find_element(By.XPATH, '//div[@data-candidate-name="TWICE"]').find_element(By.XPATH, './/button')
     if (not vote_btn.is_displayed() or not vote_btn.is_enabled()):
         print('[' + account['username'] + '] ' + 'ERROR: Cant find the vote button. The account may have already voted.', text_color='red')
@@ -207,16 +215,26 @@ def vote(driver, account, screenshots_folder):
         time.sleep(1)
 
         # wait for vote confirmation screen
-        elem = WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.XPATH, '//span[@id="step3Date"]')))
-        # print('Scroll up for better view')
-        driver.execute_script('scrollBy(0, -1080)')
-        time.sleep(0.5)
-        
-        # take a screenshot of the successful vote
-        datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
-        now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
-        driver.save_screenshot(screenshots_folder +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
-        print('[' + account['username'] + '] ' + 'Successfuly voted for TWICE! Screenshot saved.', text_color='green')   
+        elem = WebDriverWait(driver, 60).until(
+            EC.any_of(
+                EC.visibility_of_element_located((By.XPATH, '//span[@id="step3Date"]')), 
+                EC.visibility_of_element_located((By.XPATH, '//div[contains(text(), "You have exceeded the votes allowed on the current IP.")]'))
+            )
+        )
+
+        vote_confirmation = driver.find_element(By.XPATH, '//span[@id="step3Date"]')
+        if vote_confirmation.is_displayed():
+            # print('Scroll up for better view')
+            driver.execute_script('scrollBy(0, -1080)')
+            time.sleep(0.5)
+            
+            # take a screenshot of the successful vote
+            datetime_now = datetime.now(tz=pytz.timezone('Asia/Seoul'))
+            now_str = datetime_now.strftime('%Y-%m-%d-%H%M')
+            driver.save_screenshot(screenshots_folder +  now_str + '-' + account['username'] + '-' + account['method'] + '.png')
+            print('[' + account['username'] + '] ' + 'Successfuly voted for TWICE! Screenshot saved.', text_color='green')
+        else:
+            print('[' + account['username'] + '] ' + 'ERROR: IP Limit reached.', text_color='red')
     except:
         print('[' + account['username'] + '] ' + 'ERROR: Video eror or user took too long to input captcha.', text_color='red')
         return
@@ -259,7 +277,7 @@ def autoVote(account, screenshots_folder):
         auth = auth_twitch(driver, account)
     elif account['method'] == 'gmail':
         auth = auth_google(driver, account)
-    elif curr['method'] == 'kakao':
+    elif curr['method'] == 'kakao' or curr['method'] == 'kakaotalk':
         auth = auth_kakao(driver, account)
     
     if (auth is not None):
@@ -301,7 +319,7 @@ layout = [
             [sg.Text('Accounts', size=(10, 1)), sg.Input(settings['Settings']['prev_accounts_file'], key='accounts_file_browse', enable_events=True), sg.FileBrowse()],
             [sg.Text('Screenshots', size=(10, 1)), sg.Input(settings['Settings']['prev_screenshots_folder'], key='screenshots_folder_browse', enable_events=True), sg.FolderBrowse()],
             [sg.Text('Select account:', size=(30, 1), justification='left'), sg.Text('Currently running:', size=(30, 1), justification='left'),],
-            [sg.Listbox(usernames, key='username_select', size=(30,10)), sg.Listbox(running_accounts, key='running_list', highlight_text_color=sg.theme_input_text_color(), highlight_background_color=sg.theme_input_background_color(), size=(30,10), pad=((20, 0), (10, 10)))],
+            [sg.Listbox(usernames, key='username_select', select_mode=sg.LISTBOX_SELECT_MODE_EXTENDED, size=(30,10)), sg.Listbox(running_accounts, key='running_list', highlight_text_color=sg.theme_input_text_color(), highlight_background_color=sg.theme_input_background_color(), size=(30,10), pad=((20, 0), (10, 10)))],
             [sg.Column([ [sg.Button('Vote'), sg.Button('Refresh Accounts'), sg.Button('Exit')] ], vertical_alignment='center', justification='left')],
             [sg.Text('Log:', size=(10, 1), justification='left')],
             [sg.Multiline(size=(66, 5), reroute_cprint=True, key='log', reroute_stdout=True, disabled=True, auto_refresh=True, write_only=True, pad=((5, 0), (0, 20)))]
@@ -325,17 +343,18 @@ if (settings['Settings']['prev_accounts_file']):
 while True:
     event, values = window.Read()
     if event == 'Vote':
-        if len(values['username_select']) > 0:
-            curr = credentials[values['username_select'][0]]
+        for selected in values['username_select']:
+        # if len(values['username_select']) > 0:     
+            # curr = credentials[values['username_select'][0]]
+            account = credentials[selected]
             screenshots_folder = values['screenshots_folder_browse']
             if screenshots_folder and Path(screenshots_folder).is_dir():
                 screenshots_folder += '/'
-                voter = threading.Thread(target=autoVote, args=(curr, screenshots_folder))
+                voter = threading.Thread(target=autoVote, args=(account, screenshots_folder))
                 voter.daemon = True
                 voter.start()
             else:
                 sg.popup_error('Error reading screenshots folder.', keep_on_top=True)  
-        # curr = credentials[values['username_select']]
     elif event == 'accounts_file_browse' or event == 'Refresh Accounts':
         usernames = []
         credentials = {}
