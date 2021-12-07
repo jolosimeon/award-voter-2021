@@ -139,29 +139,29 @@ def vote(driver, account, screenshots_folder):
     write_event_update(account['username'], 'Start Voting')
     actions = ActionChains(driver)
     driver.get('https://mama.mwave.me/en/vote')
-    #time.sleep(1)
+    time.sleep(1.5)
 
     # check if there is tutorial
     
 
     # always wait for tutorial
-    try:
-        elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "swiper-button-next")]')))
-        tutorial_arrow = driver.find_element(By.XPATH, '//div[contains(@class, "swiper-button-next")]')
+    # try:
+    #     elem = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "swiper-button-next")]')))
+    tutorial_arrow = driver.find_element(By.XPATH, '//div[contains(@class, "swiper-button-next")]')
 
-        if (tutorial_arrow.is_displayed() and tutorial_arrow.is_enabled()):
-            # click through the tutorial dialog boxes
-            tutorial_arrow.click()
+    if (tutorial_arrow.is_displayed() and tutorial_arrow.is_enabled()):
+        # click through the tutorial dialog boxes
+        tutorial_arrow.click()
 
-            time.sleep(0.5)
-            tutorial_arrow.click()
+        time.sleep(0.5)
+        tutorial_arrow.click()
 
-            time.sleep(0.5)
-            elem = driver.find_element(By.XPATH, '//i[contains(@class, "daysCheck7Btn")]')
-            elem.click()
-    except:
-        print('[' + account['username'] + '] ' + 'ERROR: Could not find tutorial to clickthrough.', text_color='red')
-        return
+        time.sleep(0.5)
+        elem = driver.find_element(By.XPATH, '//i[contains(@class, "daysCheck7Btn")]')
+        elem.click()
+# except:
+    #     print('[' + account['username'] + '] ' + 'ERROR: Could not find tutorial to clickthrough.', text_color='red')
+    #     return
 
     # find twice and click
     time.sleep(0.5)
