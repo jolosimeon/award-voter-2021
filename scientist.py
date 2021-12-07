@@ -277,7 +277,7 @@ def autoVote(account, screenshots_folder):
         auth = auth_twitch(driver, account)
     elif account['method'] == 'gmail':
         auth = auth_google(driver, account)
-    elif curr['method'] == 'kakao' or curr['method'] == 'kakaotalk':
+    elif account['method'] == 'kakao' or account['method'] == 'kakaotalk':
         auth = auth_kakao(driver, account)
     
     if (auth is not None):
